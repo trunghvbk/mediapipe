@@ -9,6 +9,23 @@ bind(
 )
 
 http_archive(
+    name = "rules_xcodeproj",
+    sha256 = "d16de271048004ea27f98d6fefcb02214337920617a2678f58e8458980243a5f",
+    url = "https://github.com/MobileNativeFoundation/rules_xcodeproj/releases/download/1.12.1/release.tar.gz",
+)
+
+load(
+    "@rules_xcodeproj//xcodeproj:repositories.bzl",
+    "xcodeproj_rules_dependencies",
+)
+
+xcodeproj_rules_dependencies()
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
+http_archive(
     name = "bazel_skylib",
     sha256 = "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",
     urls = [
@@ -628,4 +645,32 @@ http_archive(
     strip_prefix = "Halide-15.0.1-x86-64-windows",
     urls = ["https://github.com/halide/Halide/releases/download/v15.0.1/Halide-15.0.1-x86-64-windows-4c63f1befa1063184c5982b11b6a2cc17d4e5815.zip"],
     build_file = "@//third_party:halide.BUILD",
+)
+
+http_archive(
+    name = "io_bazel_rules_appengine",
+    strip_prefix = "rules_appengine-03121ae8efa634f7219f53970650a4445a72b759",
+    # TODO: update to a release version that contains 339f6aba67fcedb7268cf54d1163cf7704a277ca.
+    # This commit fixes the Maven artifact URLs to use "https" instead of "http".
+    # We don't specify sha256, because the sha256 of GitHub-served non-release archives isn't
+    # stable.
+    urls = ["https://github.com/bazelbuild/rules_appengine/archive/03121ae8efa634f7219f53970650a4445a72b759.tar.gz"],
+)
+
+load(
+    "@io_bazel_rules_appengine//appengine:java_appengine.bzl",
+    "java_appengine_repositories",
+)
+
+java_appengine_repositories()
+
+# rules required by android
+
+android_sdk_repository(name = "androidsdk")
+
+http_archive(
+    name = "rules_android",
+    sha256 = "cd06d15dd8bb59926e4d65f9003bfc20f9da4b2519985c27e190cddc8b7a7806",
+    strip_prefix = "rules_android-0.1.1",
+    urls = ["https://github.com/bazelbuild/rules_android/archive/v0.1.1.zip"],
 )
