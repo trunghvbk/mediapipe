@@ -21,8 +21,8 @@
 #import "mediapipe/objc/MPPTimestampConverter.h"
 
 typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
-  MediaPipeDemoSourceCamera,
-  MediaPipeDemoSourceVideo
+    MediaPipeDemoSourceCamera,
+    MediaPipeDemoSourceVideo
 };
 
 @interface CommonViewController : UIViewController <MPPGraphDelegate, MPPInputSourceDelegate>
@@ -42,6 +42,7 @@ typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
 
 // The data source for the demo.
 @property(nonatomic) MediaPipeDemoSourceMode sourceMode;
+@property(nonatomic) NSURL* sourceVideoURL;
 
 // Inform the user when camera is unavailable.
 @property(nonatomic) IBOutlet UILabel* noCameraLabel;
@@ -49,11 +50,15 @@ typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
 // Display the camera preview frames.
 @property(strong, nonatomic) IBOutlet UIView* liveView;
 
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *contentView;
+@property (unsafe_unretained, nonatomic) IBOutlet UILabel *poseInfoLabel;
+
 // Render frames in a layer.
 @property(nonatomic) MPPLayerRenderer* renderer;
 
 // Process camera frames on this queue.
 @property(nonatomic) dispatch_queue_t videoQueue;
+@property(nonatomic) dispatch_queue_t deinitQueue;
 
 // Graph name.
 @property(nonatomic) NSString* graphName;

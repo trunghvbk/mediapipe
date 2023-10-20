@@ -19,11 +19,13 @@ objc_library(
     srcs = [
         "AppDelegate.mm",
         "CommonViewController.mm",
+        "SceneDelegate.m",
         "main.m",
     ],
     hdrs = [
         "AppDelegate.h",
         "CommonViewController.h",
+        "SceneDelegate.h",
     ],
     data = [
         "Base.lproj/LaunchScreen.storyboard",

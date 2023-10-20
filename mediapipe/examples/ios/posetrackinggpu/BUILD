@@ -31,39 +31,70 @@ alias(
     actual = "PoseTrackingGpuApp",
 )
 
+
+load(
+    "@rules_xcodeproj//xcodeproj:defs.bzl",
+    "top_level_target",
+    "xcodeproj",
+)
+
+# load("@rules_cc//cc:defs.bzl", "objc_library")
+
+xcodeproj(
+    name = "xcodeproj",
+    build_mode = "bazel",
+    project_name = "PoseTrackingGpuApp",
+    tags = ["manual"],
+    top_level_targets = [
+        top_level_target(
+            ":PoseTrackingGpuApp",
+            target_environments = [
+                "device",
+                "simulator",
+            ],
+        ),
+    ],
+)
+
 ios_application(
     name = "PoseTrackingGpuApp",
     app_icons = ["//mediapipe/examples/ios/common:AppIcon"],
-    bundle_id = BUNDLE_ID_PREFIX + ".PoseTrackingGpu",
+    bundle_id = "vn.com.mirabo.mediapipe.sample",
     families = [
         "iphone",
         "ipad",
     ],
     infoplists = [
-        "//mediapipe/examples/ios/common:Info.plist",
         "Info.plist",
     ],
     minimum_os_version = MIN_IOS_VERSION,
     provisioning_profile = example_provisioning(),
     deps = [
         ":PoseTrackingGpuAppLibrary",
-        "@ios_opencv//:OpencvFramework",
+        # "@ios_opencv//:OpencvFramework",
     ],
+    sdk_frameworks = [
+        "MobileCoreServices",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 objc_library(
     name = "PoseTrackingGpuAppLibrary",
     srcs = [
         "PoseTrackingViewController.mm",
+        "MainViewController.mm",
     ],
     hdrs = [
         "PoseTrackingViewController.h",
+        "MainViewController.h",
     ],
     copts = ["-std=c++17"],
     data = [
         "//mediapipe/graphs/pose_tracking:pose_tracking_gpu.binarypb",
         "//mediapipe/modules/pose_detection:pose_detection.tflite",
         "//mediapipe/modules/pose_landmark:pose_landmark_full.tflite",
+        "input.mov",
     ],
     deps = [
         "//mediapipe/examples/ios/common:CommonMediaPipeAppLibrary",

@@ -15,6 +15,7 @@
 #import "CommonViewController.h"
 
 static const char* kVideoQueueLabel = "com.google.mediapipe.example.videoQueue";
+static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue";
 
 @implementation CommonViewController
 
@@ -35,11 +36,19 @@ static const char* kVideoQueueLabel = "com.google.mediapipe.example.videoQueue";
 #pragma mark - Cleanup methods
 
 - (void)dealloc {
-  self.mediapipeGraph.delegate = nil;
-  [self.mediapipeGraph cancel];
-  // Ignore errors since we're cleaning up.
-  [self.mediapipeGraph closeAllInputStreamsWithError:nil];
-  [self.mediapipeGraph waitUntilDoneWithError:nil];
+//    self.mediapipeGraph.delegate = nil;
+//    [self.mediapipeGraph cancel];
+//    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+//        // Ignore errors since we're cleaning up.
+//        [self.mediapipeGraph closeAllInputStreamsWithError:nil];
+//        [self.mediapipeGraph waitUntilDoneWithError:nil];
+//    });
+}
+
+- (IBAction)close:(id)sender {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self dismissViewControllerAnimated:true completion:nil];
+    });
 }
 
 #pragma mark - MediaPipe graph methods
@@ -73,8 +82,8 @@ static const char* kVideoQueueLabel = "com.google.mediapipe.example.videoQueue";
   [super viewDidLoad];
 
   self.renderer = [[MPPLayerRenderer alloc] init];
-  self.renderer.layer.frame = self.liveView.layer.bounds;
-  [self.liveView.layer addSublayer:self.renderer.layer];
+  self.renderer.layer.frame = self.contentView.layer.bounds;
+  [self.contentView.layer addSublayer:self.renderer.layer];
   self.renderer.frameScaleMode = MPPFrameScaleModeFillAndCrop;
 
   self.timestampConverter = [[MPPTimestampConverter alloc] init];
@@ -82,12 +91,17 @@ static const char* kVideoQueueLabel = "com.google.mediapipe.example.videoQueue";
   dispatch_queue_attr_t qosAttribute = dispatch_queue_attr_make_with_qos_class(
       DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INTERACTIVE, /*relative_priority=*/0);
   self.videoQueue = dispatch_queue_create(kVideoQueueLabel, qosAttribute);
+    
+    dispatch_queue_attr_t deinitQosAttribute = dispatch_queue_attr_make_with_qos_class(
+        DISPATCH_QUEUE_SERIAL, QOS_CLASS_BACKGROUND, /*relative_priority=*/0);
+    self.deinitQueue = dispatch_queue_create(kDeinitQueueLabel, deinitQosAttribute);
 
-  self.graphName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphName"];
-  self.graphInputStream =
-      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphInputStream"] UTF8String];
-  self.graphOutputStream =
-      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphOutputStream"] UTF8String];
+    self.graphName = @"pose_tracking_gpu";
+//    [[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphName"];
+    self.graphInputStream = "input_video";
+//      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphInputStream"] UTF8String];
+    self.graphOutputStream = "output_video";
+//      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphOutputStream"] UTF8String];
 
   self.mediapipeGraph = [[self class] loadGraphFromResource:self.graphName];
   [self.mediapipeGraph addFrameOutputStream:self.graphOutputStream
@@ -107,14 +121,16 @@ static const char* kVideoQueueLabel = "com.google.mediapipe.example.videoQueue";
 
   switch (self.sourceMode) {
     case MediaPipeDemoSourceVideo: {
-      NSString* videoName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VideoName"];
-      AVAsset* video = [AVAsset assetWithURL:[[NSBundle mainBundle] URLForResource:videoName
-                                                                     withExtension:@"mov"]];
+//      NSString* videoName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VideoName"];
+      AVAsset* video = [AVAsset assetWithURL:_sourceVideoURL];
+//        NSString* videoName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VideoName"];
+//        NSURL* videoURL = [[NSBundle mainBundle] URLForResource:videoName
+//                                                  withExtension:@"mov"];
+//        AVAsset* video = [AVAsset assetWithURL: videoURL];
+
       self.videoSource = [[MPPPlayerInputSource alloc] initWithAVAsset:video];
       [self.videoSource setDelegate:self queue:self.videoQueue];
-      dispatch_async(self.videoQueue, ^{
-        [self.videoSource start];
-      });
+        [self startGraphAndVideo];
       break;
     }
     case MediaPipeDemoSourceCamera: {
@@ -141,12 +157,32 @@ static const char* kVideoQueueLabel = "com.google.mediapipe.example.videoQueue";
             self.noCameraLabel.hidden = YES;
           });
           [self startGraphAndCamera];
+        } else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+              self.noCameraLabel.hidden = NO;
+            });
         }
       }];
 
       break;
     }
   }
+}
+
+- (void)startGraphAndVideo {
+    // Start running self.mediapipeGraph.
+    NSError* error;
+    if (![self.mediapipeGraph startWithError:&error]) {
+      NSLog(@"Failed to start graph: %@", error);
+    }
+    else if (![self.mediapipeGraph waitUntilIdleWithError:&error]) {
+      NSLog(@"Failed to complete graph initial run: %@", error);
+    }
+
+    // Start fetching frames from the camera.
+    dispatch_async(self.videoQueue, ^{
+      [self.videoSource start];
+    });
 }
 
 - (void)startGraphAndCamera {

@@ -41,12 +41,17 @@ static const char* kLandmarksOutputStream = "pose_landmarks";
       return;
     }
     const auto& landmarks = packet.Get<::mediapipe::NormalizedLandmarkList>();
-    NSLog(@"[TS:%lld] Number of pose landmarks: %d", packet.Timestamp().Value(),
-          landmarks.landmark_size());
+      NSMutableString *infoString = [NSMutableString stringWithFormat:@"[TS:%lld] Number of pose landmarks: %d \n", packet.Timestamp().Value(),
+                                     landmarks.landmark_size()];
     for (int i = 0; i < landmarks.landmark_size(); ++i) {
-      NSLog(@"\tLandmark[%d]: (%f, %f, %f)", i, landmarks.landmark(i).x(),
-            landmarks.landmark(i).y(), landmarks.landmark(i).z());
+        mediapipe::NormalizedLandmark landmark = landmarks.landmark(i);
+        [infoString appendFormat:@"[%d]: (%.2f, %.2f, %.2f)  ", i, landmark.x(),
+         landmark.y(), landmark.z()];
     }
+      
+      dispatch_async(dispatch_get_main_queue(), ^{
+          self.poseInfoLabel.text = infoString;
+      });
   }
 }
 
