@@ -7,6 +7,7 @@ common --experimental_repo_remote_exec
 build --jobs 128
 build --define='absl=1'  # for gtest
 build --enable_platform_specific_config
+build --cxxopt='-std=c++17'
 
 # Enable stack traces
 test --test_env="GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1"
