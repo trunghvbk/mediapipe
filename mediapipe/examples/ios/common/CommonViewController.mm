@@ -18,7 +18,6 @@ static const char* kVideoQueueLabel = "com.google.mediapipe.example.videoQueue";
 static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue";
 
 @implementation CommonViewController
-
 // This provides a hook to replace the basic ViewController with a subclass when it's created from a
 // storyboard, without having to change the storyboard itself.
 + (instancetype)allocWithZone:(struct _NSZone*)zone {
@@ -85,6 +84,11 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
   self.renderer.layer.frame = self.contentView.layer.bounds;
   [self.contentView.layer addSublayer:self.renderer.layer];
   self.renderer.frameScaleMode = MPPFrameScaleModeFillAndCrop;
+    
+    self.comparingRenderer = [[MPPLayerRenderer alloc] init];
+    self.comparingRenderer.layer.frame = self.userContentView.layer.bounds;
+    [self.userContentView.layer addSublayer:self.comparingRenderer.layer];
+    self.comparingRenderer.frameScaleMode = MPPFrameScaleModeFillAndCrop;
 
   self.timestampConverter = [[MPPTimestampConverter alloc] init];
 
@@ -102,12 +106,18 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
 //      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphInputStream"] UTF8String];
     self.graphOutputStream = "output_video";
 //      [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"GraphOutputStream"] UTF8String];
-
+    
   self.mediapipeGraph = [[self class] loadGraphFromResource:self.graphName];
   [self.mediapipeGraph addFrameOutputStream:self.graphOutputStream
                            outputPacketType:MPPPacketTypePixelBuffer];
 
   self.mediapipeGraph.delegate = self;
+    
+    self.mediapipeComparingGraph = [[self class] loadGraphFromResource:self.graphName];
+    [self.mediapipeComparingGraph addFrameOutputStream:self.graphOutputStream
+                             outputPacketType:MPPPacketTypePixelBuffer];
+
+    self.mediapipeComparingGraph.delegate = self;
 }
 
 // In this application, there is only one ViewController which has no navigation to other view
@@ -120,16 +130,27 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
   [super viewWillAppear:animated];
 
   switch (self.sourceMode) {
-    case MediaPipeDemoSourceVideo: {
-//      NSString* videoName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VideoName"];
-      AVAsset* video = [AVAsset assetWithURL:_sourceVideoURL];
+      case MediaPipeDemoSourceVideo: {
+          AVAsset* video = [AVAsset assetWithURL:_sourceVideoURL];
+          self.videoSource = [[MPPPlayerInputSource alloc] initWithAVAsset:video];
+          [self.videoSource setDelegate:self queue:self.videoQueue];
+          [self startGraphAndVideo];
+          break;
+      }
+      case MediaPipeDemoSourceComparing: {
+//      AVAsset* video = [AVAsset assetWithURL:_sourceVideoURL];
 //        NSString* videoName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VideoName"];
-//        NSURL* videoURL = [[NSBundle mainBundle] URLForResource:videoName
-//                                                  withExtension:@"mov"];
-//        AVAsset* video = [AVAsset assetWithURL: videoURL];
+        NSURL* videoURL1 = [[NSBundle mainBundle] URLForResource:@"squats1"
+                                                  withExtension:@"mp4"];
+        NSURL* videoURL2 = [[NSBundle mainBundle] URLForResource:@"squats2"
+                                                  withExtension:@"mov"];
+        AVAsset* video1 = [AVAsset assetWithURL: videoURL1];
+        AVAsset* video2 = [AVAsset assetWithURL: videoURL2];
 
-      self.videoSource = [[MPPPlayerInputSource alloc] initWithAVAsset:video];
+      self.videoSource = [[MPPPlayerInputSource alloc] initWithAVAsset:video1];
+        self.comparingVideoSource = [[MPPPlayerInputSource alloc] initWithAVAsset:video2];
       [self.videoSource setDelegate:self queue:self.videoQueue];
+        [self.comparingVideoSource setDelegate:self queue:self.videoQueue];
         [self startGraphAndVideo];
       break;
     }
@@ -178,10 +199,18 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
     else if (![self.mediapipeGraph waitUntilIdleWithError:&error]) {
       NSLog(@"Failed to complete graph initial run: %@", error);
     }
-
+    
+    if (![self.mediapipeComparingGraph startWithError:&error]) {
+      NSLog(@"Failed to start graph: %@", error);
+    }
+    else if (![self.mediapipeComparingGraph waitUntilIdleWithError:&error]) {
+      NSLog(@"Failed to complete graph initial run: %@", error);
+    }
+    
     // Start fetching frames from the camera.
     dispatch_async(self.videoQueue, ^{
       [self.videoSource start];
+        [self.comparingVideoSource start];
     });
 }
 
@@ -207,15 +236,22 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
 - (void)processVideoFrame:(CVPixelBufferRef)imageBuffer
                 timestamp:(CMTime)timestamp
                fromSource:(MPPInputSource*)source {
-  if (source != self.cameraSource && source != self.videoSource) {
+  if (source != self.cameraSource && source != self.videoSource && source != self.comparingVideoSource) {
     NSLog(@"Unknown source: %@", source);
     return;
   }
-
-  [self.mediapipeGraph sendPixelBuffer:imageBuffer
-                            intoStream:self.graphInputStream
-                            packetType:MPPPacketTypePixelBuffer
-                             timestamp:[self.timestampConverter timestampForMediaTime:timestamp]];
+    
+    if (source == self.videoSource || source == self.cameraSource) {
+        [self.mediapipeGraph sendPixelBuffer:imageBuffer
+                                  intoStream:self.graphInputStream
+                                  packetType:MPPPacketTypePixelBuffer
+                                   timestamp:[self.timestampConverter timestampForMediaTime:timestamp]];
+    } else if (source == self.comparingVideoSource) {
+        [self.mediapipeComparingGraph sendPixelBuffer:imageBuffer
+                                  intoStream:self.graphInputStream
+                                  packetType:MPPPacketTypePixelBuffer
+                                   timestamp:[self.timestampConverter timestampForMediaTime:timestamp]];
+    }
 }
 
 #pragma mark - MPPGraphDelegate methods
@@ -225,13 +261,17 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
     didOutputPixelBuffer:(CVPixelBufferRef)pixelBuffer
               fromStream:(const std::string&)streamName {
   if (streamName == self.graphOutputStream) {
-    // Display the captured image on the screen.
-    CVPixelBufferRetain(pixelBuffer);
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self.renderer renderPixelBuffer:pixelBuffer];
-      CVPixelBufferRelease(pixelBuffer);
-    });
-  }
+      // Display the captured image on the screen.
+      CVPixelBufferRetain(pixelBuffer);
+      dispatch_async(dispatch_get_main_queue(), ^{
+          if (graph == self.mediapipeGraph) {
+              [self.renderer renderPixelBuffer:pixelBuffer];
+          } else if (graph == self.mediapipeComparingGraph) {
+              [self.comparingRenderer renderPixelBuffer:pixelBuffer];
+          }
+        CVPixelBufferRelease(pixelBuffer);
+      });
+    }
 }
 
 @end

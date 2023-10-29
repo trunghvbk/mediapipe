@@ -48,10 +48,11 @@ static const char* kLandmarksOutputStream = "pose_landmarks";
         [infoString appendFormat:@"[%d]: (%.2f, %.2f, %.2f)  ", i, landmark.x(),
          landmark.y(), landmark.z()];
     }
-      
-      dispatch_async(dispatch_get_main_queue(), ^{
-          self.poseInfoLabel.text = infoString;
-      });
+      if (self.sourceMode != MediaPipeDemoSourceComparing) {
+          dispatch_async(dispatch_get_main_queue(), ^{
+              self.poseInfoLabel.text = infoString;
+          });
+      }
   }
 }
 

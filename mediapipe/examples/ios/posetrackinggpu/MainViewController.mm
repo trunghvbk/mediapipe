@@ -61,6 +61,14 @@
     });
 }
 
+- (IBAction)compare2Videos:(id)sender {
+    PoseTrackingViewController *vc = [self trackingViewController];
+    vc.sourceMode = MediaPipeDemoSourceComparing;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentViewController:vc animated:YES completion:nil];
+    });
+}
+
 - (UIViewController *) trackingViewController {
     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
     PoseTrackingViewController *vc = [storyboard instantiateViewControllerWithIdentifier:@"CommonViewController"];

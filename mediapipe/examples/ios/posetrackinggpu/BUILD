@@ -95,6 +95,8 @@ objc_library(
         "//mediapipe/modules/pose_detection:pose_detection.tflite",
         "//mediapipe/modules/pose_landmark:pose_landmark_full.tflite",
         "input.mov",
+        "squats1.mp4",
+        "squats2.mov",
     ],
     deps = [
         "//mediapipe/examples/ios/common:CommonMediaPipeAppLibrary",

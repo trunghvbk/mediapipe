@@ -22,7 +22,8 @@
 
 typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
     MediaPipeDemoSourceCamera,
-    MediaPipeDemoSourceVideo
+    MediaPipeDemoSourceVideo,
+    MediaPipeDemoSourceComparing,
 };
 
 @interface CommonViewController : UIViewController <MPPGraphDelegate, MPPInputSourceDelegate>
@@ -30,12 +31,15 @@ typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
 // The MediaPipe graph currently in use. Initialized in viewDidLoad, started in
 // viewWillAppear: and sent video frames on videoQueue.
 @property(nonatomic) MPPGraph* mediapipeGraph;
+@property(nonatomic) MPPGraph* mediapipeComparingGraph;
 
 // Handles camera access via AVCaptureSession library.
 @property(nonatomic) MPPCameraInputSource* cameraSource;
 
 // Provides data from a video.
 @property(nonatomic) MPPPlayerInputSource* videoSource;
+
+@property(nonatomic) MPPPlayerInputSource* comparingVideoSource;
 
 // Helps to convert timestamp.
 @property(nonatomic) MPPTimestampConverter* timestampConverter;
@@ -46,15 +50,17 @@ typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
 
 // Inform the user when camera is unavailable.
 @property(nonatomic) IBOutlet UILabel* noCameraLabel;
+@property(nonatomic) IBOutlet UILabel* poseInfoLabel;
 
 // Display the camera preview frames.
 @property(strong, nonatomic) IBOutlet UIView* liveView;
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *contentView;
-@property (unsafe_unretained, nonatomic) IBOutlet UILabel *poseInfoLabel;
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *userContentView;
 
 // Render frames in a layer.
 @property(nonatomic) MPPLayerRenderer* renderer;
+@property(nonatomic) MPPLayerRenderer* comparingRenderer;
 
 // Process camera frames on this queue.
 @property(nonatomic) dispatch_queue_t videoQueue;
@@ -68,5 +74,4 @@ typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
 
 // Graph output stream.
 @property(nonatomic) const char* graphOutputStream;
-
 @end
