@@ -13,22 +13,27 @@
 // limitations under the License.
 
 #import "PoseTrackingViewController.h"
+#import "CompareViewController.h"
 
 #include "mediapipe/framework/formats/landmark.pb.h"
+#import <MobileCoreServices/MobileCoreServices.h>
 
 static const char* kLandmarksOutputStream = "pose_landmarks";
 
+@interface PoseTrackingViewController () <UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@end
+
 @implementation PoseTrackingViewController
-
+BOOL didRunSourceVideo = false;
 #pragma mark - UIViewController methods
-
 - (void)viewDidLoad {
   [super viewDidLoad];
-
+    didRunSourceVideo = false;
   [self.mediapipeGraph addFrameOutputStream:kLandmarksOutputStream
                            outputPacketType:MPPPacketTypeRaw];
     
     self.landmarkListArray = [[NSMutableArray alloc] init];
+    self.templateLandmarkListArray = [[NSMutableArray alloc] init];
     self.comparingLandmarkListArray = [[NSMutableArray alloc] init];
     
     self.compareButton.layer.cornerRadius = 4;
@@ -49,48 +54,88 @@ static const char* kLandmarksOutputStream = "pose_landmarks";
     dispatch_async(self.videoQueue, ^{
       [self.videoSource start];
     });
-}
-
-- (void)startComparingGraphAndVideo {
-    NSError* error;
-    if (![self.mediapipeComparingGraph startWithError:&error]) {
-      NSLog(@"Failed to start graph: %@", error);
-    }
-    else if (![self.mediapipeComparingGraph waitUntilIdleWithError:&error]) {
-      NSLog(@"Failed to complete graph initial run: %@", error);
-    }
     
-    dispatch_async(self.videoQueue, ^{
-        [self.comparingVideoSource start];
-    });
+    if (self.sourceMode == MediaPipeDemoSourceMultipleVideo) {
+        if (![self.mediapipeComparingGraph startWithError:&error]) {
+          NSLog(@"Failed to start graph: %@", error);
+        }
+        else if (![self.mediapipeComparingGraph waitUntilIdleWithError:&error]) {
+          NSLog(@"Failed to complete graph initial run: %@", error);
+        }
+        
+        dispatch_async(self.videoQueue, ^{
+            [self.comparingVideoSource start];
+        });
+    }
 }
 
 - (void)videoDidPlayToEnd:(CMTime)timestamp {
-    if (self.videoSource.isRunning) {
-        [self.videoSource stop];
-        NSMutableString *info = [[NSMutableString alloc] initWithString:@""];
-        for (int i = 0; i < self.landmarkListArray.count; i++) {
-            [info appendString:[NSString stringWithFormat:@"\n%@", [self.landmarkListArray[i] description]]];
+    if (self.sourceMode == MediaPipeDemoSourceComparing) {
+        if (self.videoSource.isRunning) {
+            [self.videoSource stop];
+            NSMutableString *info = [[NSMutableString alloc] initWithString:@""];
+            for (int i = 0; i < self.landmarkListArray.count; i++) {
+                LandmarkList *landmarkList = self.landmarkListArray[i];
+                [info appendString:[NSString stringWithFormat:@"\n%@", [landmarkList description]]];
+                if (!didRunSourceVideo) [self.templateLandmarkListArray addObject:landmarkList];
+                else [self.comparingLandmarkListArray addObject:landmarkList];
+            }
+            NSLog([NSString stringWithFormat:@"LandmarkListArray:\n%@", info]);
+            NSLog([NSString stringWithFormat:@"LandmarkListArray Count:\n%d", self.landmarkListArray.count]);
+            if (self.sourceMode == MediaPipeDemoSourceComparing) {
+                NSString *title = didRunSourceVideo ? @"COMPARE" : @"PICK OTHER VIDEO";
+                [self.landmarkListArray removeAllObjects];
+                [self showCompareButton: true title:title];
+            }
         }
-//        NSLog([NSString stringWithFormat:@"LandmarkListArray:\n%@", info]);
-        NSLog([NSString stringWithFormat:@"LandmarkListArray:\n%d", self.landmarkListArray.count]);
-        [self startComparingGraphAndVideo];
-    } else if (self.comparingVideoSource.isRunning) {
-        [self.comparingVideoSource stop];
-//        NSMutableString *info = [[NSMutableString alloc] initWithString:@""];
-//        for (int i = 0; i < self.comparingLandmarkListArray.count; i++) {
-//            [info appendString:[self.comparingLandmarkListArray[i] description]];
-//        }
-        NSLog([NSString stringWithFormat:@"ComparingLandmarkListArray:\n%d", self.comparingLandmarkListArray.count]);
-        
-        [self showCompareButton];
     }
 }
 
-- (void)showCompareButton {
+- (IBAction)compareOtherVideo:(id)sender {
+    if (!didRunSourceVideo) {
+        [self pickAnotherVideo];
+    } else {
+        CompareViewController *vc = [self compareViewController];
+        [self presentModalViewController:vc animated:true];
+    }
+    didRunSourceVideo = true;
+    [self showCompareButton:false title:@""];
+}
+
+- (void) pickAnotherVideo {
+    // Create a UIImagePickerController instance.
+    UIImagePickerController *imagePickerController = [[UIImagePickerController alloc] init];
+    
+    // Set the media types that the UIImagePickerController should allow the user to select.
+    imagePickerController.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    imagePickerController.mediaTypes = @[(NSString*)kUTTypeMovie];
+    
+    // Set the delegate for the UIImagePickerController.
+    imagePickerController.delegate = self;
+    
+    // Present the UIImagePickerController modally.
+    [self presentViewController:imagePickerController animated:YES completion:nil];
+}
+
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
+    // Get the video URL from the info dictionary.
+    NSURL *videoURL = info[UIImagePickerControllerMediaURL];
+    
+    // Dismiss the UIImagePickerController.
+    [picker dismissViewControllerAnimated:YES completion:^{
+        AVAsset* video = [AVAsset assetWithURL: videoURL];
+        [self.videoSource initWithAVAsset: video];
+        [self.videoSource start];
+    }];
+    
+    // Do something with the video URL.
+}
+
+- (void)showCompareButton: (BOOL) showed title: (NSString* )title {
     // Show Comparing Button
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.compareButton setHidden:false];
+        [self.compareButton setTitle:title forState:UIControlStateNormal];
+        [self.compareButton setHidden:!showed];
     });
 }
 
@@ -115,7 +160,7 @@ static const char* kLandmarksOutputStream = "pose_landmarks";
         
         for (int i = 0; i < landmarks.landmark_size(); ++i) {
             mediapipe::NormalizedLandmark landmark = landmarks.landmark(i);
-            if (self.sourceMode != MediaPipeDemoSourceComparing) {
+            if (self.sourceMode != MediaPipeDemoSourceMultipleVideo) {
                 [infoString appendFormat:@"[%d]: (%f, %f, %f)  ", i, landmark.x(),
                  landmark.y(), landmark.z()];
             }
@@ -138,12 +183,19 @@ static const char* kLandmarksOutputStream = "pose_landmarks";
             [self.comparingLandmarkListArray addObject: landmarkList1];
         }
       
-      if (self.sourceMode != MediaPipeDemoSourceComparing) {
+      if (self.sourceMode != MediaPipeDemoSourceMultipleVideo) {
           dispatch_async(dispatch_get_main_queue(), ^{
               self.poseInfoLabel.text = infoString;
           });
       }
   }
+}
+
+- (UIViewController *) compareViewController {
+    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+    CompareViewController *vc = [storyboard instantiateViewControllerWithIdentifier:@"CompareViewController"];
+    [vc setModalPresentationStyle:UIModalPresentationFullScreen];
+    return vc;
 }
 
 @end

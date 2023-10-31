@@ -14,7 +14,7 @@
 @end
 
 @implementation MainViewController
-
+MediaPipeDemoSourceMode currentSourceMode;
 #pragma mark - UIViewController methods
 
 - (void)viewDidLoad {
@@ -22,6 +22,11 @@
 }
 
 - (IBAction)selectVideo:(id)sender {
+    currentSourceMode = MediaPipeDemoSourceVideo;
+    [self pickVideo];
+}
+
+- (void) pickVideo {
     // Create a UIImagePickerController instance.
     UIImagePickerController *imagePickerController = [[UIImagePickerController alloc] init];
     
@@ -43,7 +48,7 @@
     // Dismiss the UIImagePickerController.
     [picker dismissViewControllerAnimated:YES completion:^{
         PoseTrackingViewController *vc = [self trackingViewController];
-        vc.sourceMode = MediaPipeDemoSourceVideo;
+        vc.sourceMode = currentSourceMode;
         vc.sourceVideoURL = videoURL;
         dispatch_async(dispatch_get_main_queue(), ^{
             [self presentViewController:vc animated:YES completion:nil];
@@ -61,12 +66,17 @@
     });
 }
 
-- (IBAction)compare2Videos:(id)sender {
+- (IBAction)showMultipleVideos:(id)sender {
     PoseTrackingViewController *vc = [self trackingViewController];
-    vc.sourceMode = MediaPipeDemoSourceComparing;
+    vc.sourceMode = MediaPipeDemoSourceMultipleVideo;
     dispatch_async(dispatch_get_main_queue(), ^{
         [self presentViewController:vc animated:YES completion:nil];
     });
+}
+
+- (IBAction)compare2Videos:(id)sender {
+    [self pickVideo];
+    currentSourceMode = MediaPipeDemoSourceComparing;
 }
 
 - (UIViewController *) trackingViewController {

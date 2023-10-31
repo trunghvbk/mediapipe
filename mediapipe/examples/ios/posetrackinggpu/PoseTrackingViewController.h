@@ -18,5 +18,6 @@
 
 @interface PoseTrackingViewController : CommonViewController
 @property (nonatomic, readwrite) NSMutableArray<LandmarkList*> *landmarkListArray;
+@property (nonatomic, readwrite) NSMutableArray<LandmarkList*> *templateLandmarkListArray;
 @property (nonatomic, readwrite) NSMutableArray<LandmarkList*> *comparingLandmarkListArray;
 @end

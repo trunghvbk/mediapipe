@@ -86,12 +86,14 @@ objc_library(
         "MainViewController.mm",
         "PoseHelper.mm",
         "Landmark.m",
+        "CompareViewController.m",
     ],
     hdrs = [
         "PoseTrackingViewController.h",
         "MainViewController.h",
         "PoseHelper.h",
         "Landmark.h",
+        "CompareViewController.h",
     ],
     # copts = ["-std=c++17"],
     data = [

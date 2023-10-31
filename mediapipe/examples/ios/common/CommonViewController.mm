@@ -138,6 +138,14 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
           break;
       }
       case MediaPipeDemoSourceComparing: {
+          AVAsset* video = [AVAsset assetWithURL:_sourceVideoURL];
+          self.videoSource = [[MPPPlayerInputSource alloc] initWithAVAsset:video];
+          [self.videoSource setDelegate:self queue:self.videoQueue];
+          [self startGraphAndVideo];
+          break;
+      }
+          
+      case MediaPipeDemoSourceMultipleVideo: {
 //      AVAsset* video = [AVAsset assetWithURL:_sourceVideoURL];
 //        NSString* videoName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"VideoName"];
         NSURL* videoURL1 = [[NSBundle mainBundle] URLForResource:@"squats1"

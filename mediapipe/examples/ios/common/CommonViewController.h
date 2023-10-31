@@ -23,6 +23,7 @@
 typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
     MediaPipeDemoSourceCamera,
     MediaPipeDemoSourceVideo,
+    MediaPipeDemoSourceMultipleVideo,
     MediaPipeDemoSourceComparing,
 };
 
