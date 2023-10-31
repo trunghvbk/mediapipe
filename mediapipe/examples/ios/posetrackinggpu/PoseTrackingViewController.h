@@ -13,9 +13,10 @@
 // limitations under the License.
 
 #import <UIKit/UIKit.h>
-
+#import "Landmark.h"
 #import "mediapipe/examples/ios/common/CommonViewController.h"
 
 @interface PoseTrackingViewController : CommonViewController
-
+@property (nonatomic, readwrite) NSMutableArray<LandmarkList*> *landmarkListArray;
+@property (nonatomic, readwrite) NSMutableArray<LandmarkList*> *comparingLandmarkListArray;
 @end

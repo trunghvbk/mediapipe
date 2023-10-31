@@ -84,12 +84,16 @@ objc_library(
     srcs = [
         "PoseTrackingViewController.mm",
         "MainViewController.mm",
+        "PoseHelper.mm",
+        "Landmark.m",
     ],
     hdrs = [
         "PoseTrackingViewController.h",
         "MainViewController.h",
+        "PoseHelper.h",
+        "Landmark.h",
     ],
-    copts = ["-std=c++17"],
+    # copts = ["-std=c++17"],
     data = [
         "//mediapipe/graphs/pose_tracking:pose_tracking_gpu.binarypb",
         "//mediapipe/modules/pose_detection:pose_detection.tflite",

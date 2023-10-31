@@ -190,30 +190,6 @@ static const char* kDeinitQueueLabel = "com.google.mediapipe.example.deinitQueue
   }
 }
 
-- (void)startGraphAndVideo {
-    // Start running self.mediapipeGraph.
-    NSError* error;
-    if (![self.mediapipeGraph startWithError:&error]) {
-      NSLog(@"Failed to start graph: %@", error);
-    }
-    else if (![self.mediapipeGraph waitUntilIdleWithError:&error]) {
-      NSLog(@"Failed to complete graph initial run: %@", error);
-    }
-    
-    if (![self.mediapipeComparingGraph startWithError:&error]) {
-      NSLog(@"Failed to start graph: %@", error);
-    }
-    else if (![self.mediapipeComparingGraph waitUntilIdleWithError:&error]) {
-      NSLog(@"Failed to complete graph initial run: %@", error);
-    }
-    
-    // Start fetching frames from the camera.
-    dispatch_async(self.videoQueue, ^{
-      [self.videoSource start];
-        [self.comparingVideoSource start];
-    });
-}
-
 - (void)startGraphAndCamera {
   // Start running self.mediapipeGraph.
   NSError* error;

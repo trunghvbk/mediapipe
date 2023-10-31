@@ -27,7 +27,73 @@ static const char* kLandmarksOutputStream = "pose_landmarks";
 
   [self.mediapipeGraph addFrameOutputStream:kLandmarksOutputStream
                            outputPacketType:MPPPacketTypeRaw];
+    
+    self.landmarkListArray = [[NSMutableArray alloc] init];
+    self.comparingLandmarkListArray = [[NSMutableArray alloc] init];
+    
+    self.compareButton.layer.cornerRadius = 4;
+    self.compareButton.layer.masksToBounds = true;
 }
+
+- (void)startGraphAndVideo {
+    // Start running self.mediapipeGraph.
+    NSError* error;
+    if (![self.mediapipeGraph startWithError:&error]) {
+      NSLog(@"Failed to start graph: %@", error);
+    }
+    else if (![self.mediapipeGraph waitUntilIdleWithError:&error]) {
+      NSLog(@"Failed to complete graph initial run: %@", error);
+    }
+    
+    // Start fetching frames from the camera.
+    dispatch_async(self.videoQueue, ^{
+      [self.videoSource start];
+    });
+}
+
+- (void)startComparingGraphAndVideo {
+    NSError* error;
+    if (![self.mediapipeComparingGraph startWithError:&error]) {
+      NSLog(@"Failed to start graph: %@", error);
+    }
+    else if (![self.mediapipeComparingGraph waitUntilIdleWithError:&error]) {
+      NSLog(@"Failed to complete graph initial run: %@", error);
+    }
+    
+    dispatch_async(self.videoQueue, ^{
+        [self.comparingVideoSource start];
+    });
+}
+
+- (void)videoDidPlayToEnd:(CMTime)timestamp {
+    if (self.videoSource.isRunning) {
+        [self.videoSource stop];
+        NSMutableString *info = [[NSMutableString alloc] initWithString:@""];
+        for (int i = 0; i < self.landmarkListArray.count; i++) {
+            [info appendString:[NSString stringWithFormat:@"\n%@", [self.landmarkListArray[i] description]]];
+        }
+//        NSLog([NSString stringWithFormat:@"LandmarkListArray:\n%@", info]);
+        NSLog([NSString stringWithFormat:@"LandmarkListArray:\n%d", self.landmarkListArray.count]);
+        [self startComparingGraphAndVideo];
+    } else if (self.comparingVideoSource.isRunning) {
+        [self.comparingVideoSource stop];
+//        NSMutableString *info = [[NSMutableString alloc] initWithString:@""];
+//        for (int i = 0; i < self.comparingLandmarkListArray.count; i++) {
+//            [info appendString:[self.comparingLandmarkListArray[i] description]];
+//        }
+        NSLog([NSString stringWithFormat:@"ComparingLandmarkListArray:\n%d", self.comparingLandmarkListArray.count]);
+        
+        [self showCompareButton];
+    }
+}
+
+- (void)showCompareButton {
+    // Show Comparing Button
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.compareButton setHidden:false];
+    });
+}
+
 
 #pragma mark - MPPGraphDelegate methods
 
@@ -35,19 +101,43 @@ static const char* kLandmarksOutputStream = "pose_landmarks";
 - (void)mediapipeGraph:(MPPGraph*)graph
      didOutputPacket:(const ::mediapipe::Packet&)packet
           fromStream:(const std::string&)streamName {
-  if (streamName == kLandmarksOutputStream) {
-    if (packet.IsEmpty()) {
-      NSLog(@"[TS:%lld] No pose landmarks", packet.Timestamp().Value());
-      return;
-    }
-    const auto& landmarks = packet.Get<::mediapipe::NormalizedLandmarkList>();
-      NSMutableString *infoString = [NSMutableString stringWithFormat:@"[TS:%lld] Number of pose landmarks: %d \n", packet.Timestamp().Value(),
-                                     landmarks.landmark_size()];
-    for (int i = 0; i < landmarks.landmark_size(); ++i) {
-        mediapipe::NormalizedLandmark landmark = landmarks.landmark(i);
-        [infoString appendFormat:@"[%d]: (%.2f, %.2f, %.2f)  ", i, landmark.x(),
-         landmark.y(), landmark.z()];
-    }
+    if (streamName == kLandmarksOutputStream) {
+        int64 timeStamp = packet.Timestamp().Value();
+//        NSLog(@"TS:%lld", timeStamp);
+        if (packet.IsEmpty()) {
+            NSLog(@"[TS:%lld] No pose landmarks", timeStamp);
+            return;
+        }
+        
+        const auto& landmarks = packet.Get<::mediapipe::NormalizedLandmarkList>();
+        NSMutableString *infoString = [NSMutableString stringWithFormat:@"[TS:%lld] Number of pose landmarks: %d \n", timeStamp, landmarks.landmark_size()];
+        NSMutableArray<Landmark *>* landmarkList = [[NSMutableArray alloc] init];
+        
+        for (int i = 0; i < landmarks.landmark_size(); ++i) {
+            mediapipe::NormalizedLandmark landmark = landmarks.landmark(i);
+            if (self.sourceMode != MediaPipeDemoSourceComparing) {
+                [infoString appendFormat:@"[%d]: (%f, %f, %f)  ", i, landmark.x(),
+                 landmark.y(), landmark.z()];
+            }
+//            if (graph == self.mediapipeComparingGraph) {
+//                NSLog([NSString stringWithFormat:@"[%d]: (%f, %f, %f)  ", i, landmark.x(),
+//                       landmark.y(), landmark.z()]);
+//            } else {
+//                NSLog([NSString stringWithFormat:@"Comparing [%d]: (%f, %f, %f)  ", i, landmark.x(),
+//                       landmark.y(), landmark.z()]);
+//            }
+            
+            Landmark *aLandmark = [[Landmark alloc] initWithX:landmark.x() y:landmark.y() z:landmark.z() type: (LandmarkType)i];
+                [landmarkList addObject:aLandmark];
+        }
+        
+        LandmarkList* landmarkList1 = [[LandmarkList alloc] initWithLandmarks:landmarkList timeStamp: timeStamp];
+        if (graph == self.mediapipeGraph) {
+            [self.landmarkListArray addObject: landmarkList1];
+        } else if (graph == self.mediapipeComparingGraph) {
+            [self.comparingLandmarkListArray addObject: landmarkList1];
+        }
+      
       if (self.sourceMode != MediaPipeDemoSourceComparing) {
           dispatch_async(dispatch_get_main_queue(), ^{
               self.poseInfoLabel.text = infoString;

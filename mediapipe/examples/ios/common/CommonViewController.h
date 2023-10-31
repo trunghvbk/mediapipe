@@ -57,6 +57,7 @@ typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *contentView;
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *userContentView;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *compareButton;
 
 // Render frames in a layer.
 @property(nonatomic) MPPLayerRenderer* renderer;
@@ -74,4 +75,6 @@ typedef NS_ENUM(NSInteger, MediaPipeDemoSourceMode) {
 
 // Graph output stream.
 @property(nonatomic) const char* graphOutputStream;
+
+- (void)startGraphAndVideo;
 @end
