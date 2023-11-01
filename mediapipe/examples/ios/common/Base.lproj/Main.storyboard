@@ -194,7 +194,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Comparing result:" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7ca-A7-F1b">
-                                <rect key="frame" x="0.0" y="64" width="375" height="20.5"/>
+                                <rect key="frame" x="16" y="64" width="343" height="20.5"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
@@ -225,8 +225,8 @@
                         <constraints>
                             <constraint firstItem="33s-7k-e6O" firstAttribute="top" secondItem="HD6-6c-God" secondAttribute="top" id="Gi3-aW-00s"/>
                             <constraint firstItem="7ca-A7-F1b" firstAttribute="top" secondItem="HD6-6c-God" secondAttribute="top" constant="44" id="VBC-ft-acJ"/>
-                            <constraint firstItem="7ca-A7-F1b" firstAttribute="leading" secondItem="HD6-6c-God" secondAttribute="leading" id="a8r-lb-3Ye"/>
-                            <constraint firstItem="HD6-6c-God" firstAttribute="trailing" secondItem="7ca-A7-F1b" secondAttribute="trailing" id="hwf-zl-MR6"/>
+                            <constraint firstItem="7ca-A7-F1b" firstAttribute="leading" secondItem="HD6-6c-God" secondAttribute="leading" constant="16" id="a8r-lb-3Ye"/>
+                            <constraint firstItem="HD6-6c-God" firstAttribute="trailing" secondItem="7ca-A7-F1b" secondAttribute="trailing" constant="16" id="hwf-zl-MR6"/>
                             <constraint firstItem="33s-7k-e6O" firstAttribute="trailing" secondItem="HD6-6c-God" secondAttribute="trailing" id="iCj-3h-8t4"/>
                             <constraint firstItem="svf-k7-rO1" firstAttribute="leading" secondItem="HD6-6c-God" secondAttribute="leading" constant="44" id="lV1-ue-yIZ"/>
                             <constraint firstItem="svf-k7-rO1" firstAttribute="top" secondItem="HD6-6c-God" secondAttribute="top" id="qim-iZ-cfK"/>

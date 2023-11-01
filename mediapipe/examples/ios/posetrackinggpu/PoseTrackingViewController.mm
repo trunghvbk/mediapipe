@@ -95,8 +95,13 @@ BOOL didRunSourceVideo = false;
     if (!didRunSourceVideo) {
         [self pickAnotherVideo];
     } else {
-        CompareViewController *vc = [self compareViewController];
-        [self presentModalViewController:vc animated:true];
+//        [self dismissViewControllerAnimated:false completion:^{
+            CompareViewController *vc = [self compareViewController];
+            vc.templateLandmarkListArray = self.templateLandmarkListArray;
+            vc.comparingLandmarkListArray = self.comparingLandmarkListArray;
+            [self presentModalViewController:vc animated:true];
+        
+//        }];
     }
     didRunSourceVideo = true;
     [self showCompareButton:false title:@""];

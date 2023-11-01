@@ -9,19 +9,18 @@
 
 
 @implementation Landmark
-
 - (id)initWithX:(float)x1 y:(float)y1 z:(float)z1 type:(LandmarkType)type1 {
     self = [super init];
     if (!self) return nil;
-    x = x1;
-    y = y1;
-    z = z1;
-    type = type1;
+    self.x = x1;
+    self.y = y1;
+    self.z = z1;
+    self.type = type1;
     return self;
 }
 
 - (NSString *)name {
-    switch (type) {
+    switch (self.type) {
         case nose:
             return @"nose";
             break;
@@ -125,7 +124,7 @@
 }
 
 - (NSString *) description {
-    return [NSString stringWithFormat:@"%@: x: %f - y: %f - z: %f", self.name, x, y, z];
+    return [NSString stringWithFormat:@"%@: x: %f - y: %f - z: %f", self.name, self.x, self.y, self.z];
 }
 
 @end
@@ -135,16 +134,16 @@
 - (id)initWithLandmarks:(NSArray *)landmarks1  timeStamp:(float)timeStamp1 {
     self = [super init];
     if (!self) return  nil;
-    landmarks = landmarks1;
-    timeStamp = timeStamp1;
+    self.landmarks = landmarks1;
+    self.timeStamp = timeStamp1;
     return self;
 }
 
 - (NSString *)description {
     NSMutableString *des = [[NSMutableString alloc] initWithString:@""];
-    for (int i = 0; i < landmarks.count; i++) {
-        [des appendString: [NSString stringWithFormat:@" %@", [landmarks[i] description]]];
+    for (int i = 0; i < self.landmarks.count; i++) {
+        [des appendString: [NSString stringWithFormat:@" %@", [self.landmarks[i] description]]];
     }
-    return [NSString stringWithFormat:@"TS:%f - %@", timeStamp, des];
+    return [NSString stringWithFormat:@"TS:%f - %@", self.timeStamp, des];
 }
 @end

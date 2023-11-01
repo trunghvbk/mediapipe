@@ -43,21 +43,19 @@ typedef NS_ENUM(NSInteger, LandmarkType) {
     rightFootIndex
 };
 
-@interface Landmark: NSObject {
-    float x;
-    float y;
-    float z;
-    LandmarkType type;
-}
+@interface Landmark: NSObject
 - (id)initWithX:(float) x1 y: (float) y1 z:(float) z1 type: (LandmarkType) type;
 - (NSString *) description;
 - (NSString *) name;
+@property (nonatomic) float x;
+@property (nonatomic) float y;
+@property (nonatomic) float z;
+@property (nonatomic) LandmarkType type;
 @end
 
-@interface LandmarkList : NSObject {
-    NSArray<Landmark *> *landmarks;
-    float timeStamp;
-}
+@interface LandmarkList : NSObject
 - (id)initWithLandmarks:(NSArray *) landmarks timeStamp: (float) timeStamp;
 - (NSString *) description;
+@property (nonatomic, readwrite) NSArray<Landmark*>* landmarks;
+@property (nonatomic) float timeStamp;
 @end
